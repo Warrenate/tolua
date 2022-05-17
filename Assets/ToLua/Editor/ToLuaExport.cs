@@ -171,6 +171,17 @@ public static class ToLuaExport
         "Type.IsSZArray",
         "Net.WriteStreamClosedEventHandler",
         "MeshRenderer.receiveGI",
+
+        //Customize
+        "ParticleSystem.SetParticlesWithNativeArray",
+        "ParticleSystem.SetParticles",
+        "ParticleSystem.GetParticlesWithNativeArray",
+        "ParticleSystem.GetParticles",
+        "Light.SetLightDirty",
+        "MeshRenderer.scaleInLightmap",
+        "MeshRenderer.receiveGI",
+        "MeshRenderer.stitchLightmapSeams",
+        "MeshRenderer.scaleInLightmap",
     };
 
     class _MethodBase
