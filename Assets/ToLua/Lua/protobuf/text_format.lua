@@ -24,13 +24,7 @@ local tostring = tostring
 
 local descriptor = require "protobuf.descriptor"
 
--- module "protobuf.text_format"
-local text_format = {}
-if setfenv then
-  setfenv(1, text_format);
-else
-  _ENV = text_format
-end
+module "protobuf.text_format"
 
 function format(buffer)
     local len = string.len( buffer )	
@@ -83,4 +77,3 @@ function msg_format(msg)
     return table.concat(out)
 end
 
-return text_format

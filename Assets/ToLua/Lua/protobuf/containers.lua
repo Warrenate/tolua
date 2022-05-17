@@ -20,13 +20,7 @@ local table = table
 local rawset = rawset
 local error = error
 
--- module "protobuf.containers"
-local containers = {}
-if setfenv then
-  setfenv(1, containers);
-else
-  _ENV = containers
-end
+module "protobuf.containers"
 
 local _RCFC_meta = {
     add = function(self)
@@ -82,4 +76,3 @@ function RepeatedScalarFieldContainer(listener, type_checker)
 end
 
 
-return containers

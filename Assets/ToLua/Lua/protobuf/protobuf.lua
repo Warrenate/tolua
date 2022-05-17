@@ -28,7 +28,7 @@ local string = string
 local tostring = tostring
 local type = type
 
-local pb = require "pb2"
+local pb = require "pb"
 local wire_format = require "protobuf.wire_format"
 local type_checkers = require "protobuf.type_checkers"
 local encoder = require "protobuf.encoder"
@@ -39,13 +39,7 @@ local descriptor = require "protobuf.descriptor"
 local FieldDescriptor = descriptor.FieldDescriptor
 local text_format = require "protobuf.text_format"
 
--- module("protobuf.protobuf")
-local protobuf = {}
-if setfenv then
-  setfenv(1, protobuf);
-else
-  _ENV = protobuf
-end
+module("protobuf.protobuf")
 
 local function make_descriptor(name, descriptor, usable_key)
     local meta = {
@@ -62,7 +56,7 @@ local function make_descriptor(name, descriptor, usable_key)
         return setmetatable({}, meta)
     end
 
-    protobuf[name] = setmetatable(descriptor, meta);
+    _M[name] = setmetatable(descriptor, meta);
 end
 
 
@@ -144,9 +138,9 @@ local NON_PACKABLE_TYPES = {
 
 local _VALUE_CHECKERS = {
     [FieldDescriptor.CPPTYPE_INT32] = type_checkers.Int32ValueChecker(),
-    [FieldDescriptor.CPPTYPE_INT64] = type_checkers.TypeChecker({string = true, number = true}),
+    [FieldDescriptor.CPPTYPE_INT64] = type_checkers.Int64ValueChecker(),
     [FieldDescriptor.CPPTYPE_UINT32] = type_checkers.Uint32ValueChecker(),
-    [FieldDescriptor.CPPTYPE_UINT64] = type_checkers.TypeChecker({string = true, number = true}),
+    [FieldDescriptor.CPPTYPE_UINT64] = type_checkers.Uint64ValueChecker(),
     [FieldDescriptor.CPPTYPE_DOUBLE] = type_checkers.TypeChecker({number = true}),
     [FieldDescriptor.CPPTYPE_FLOAT] = type_checkers.TypeChecker({number = true}),
     [FieldDescriptor.CPPTYPE_BOOL] = type_checkers.TypeChecker({boolean = true, bool = true, int=true}),
@@ -348,11 +342,8 @@ local function _AddPropertiesForRepeatedField(field, message_meta)
         local field_value = self._fields[field]
         if field_value == nil then
             field_value = field._default_constructor(self)
-            self._fields[field] = field_value
 
-            if not self._cached_byte_size_dirty then
-                message_meta._member._Modified(self)
-            end
+            self._fields[field] = field_value
         end
         return field_value
     end
@@ -370,12 +361,9 @@ local function _AddPropertiesForNonRepeatedCompositeField(field, message_meta)
         local field_value = self._fields[field]
         if field_value == nil then
             field_value = message_type._concrete_class()
-            field_value:_SetListener(self._listener_for_children)            
+            field_value:_SetListener(self._listener_for_children)
+            
             self._fields[field] = field_value
-
-            if not self._cached_byte_size_dirty then
-                message_meta._member._Modified(self)
-            end
         end
         return field_value
     end
@@ -508,33 +496,15 @@ local function _IsPresent(descriptor, value)
     end
 end
 
-function sortFunc(a, b)
-    return a.index < b.index
-end
-function pairsByKeys (t, f)
-    local a = {}
-    for n in pairs(t) do table.insert(a, n) end
-    table.sort(a, f)
-    local i = 0                 -- iterator variable
-    local iter = function ()    -- iterator function
-       i = i + 1
-       if a[i] == nil then return nil
-       else return a[i], t[a[i]]
-       end
-    end
-    return iter
-end
-
 local function _AddListFieldsMethod(message_descriptor, message_meta)
     message_meta._member.ListFields = function (self)
         local list_field = function(fields)
-            --local f, s, v = pairs(self._fields)
-            local f,s,v = pairsByKeys(self._fields, sortFunc)
+            local f, s, v = pairs(self._fields)
             local iter = function(a, i)
                 while true do
                     local descriptor, value = f(a, i)
                     if descriptor == nil then
-                        return                     
+                        return 
                     elseif _IsPresent(descriptor, value) then
                         return descriptor, value
                     end
@@ -562,31 +532,22 @@ local function _AddHasFieldMethod(message_descriptor, message_meta)
             value = self._fields[field]
             return value ~= nil  and value._is_present_in_parent
         else
-            local valueTmp =  self._fields[field]
-            return valueTmp ~= nil
+            return self._fields[field]
         end
     end
 end
 
 local function _AddClearFieldMethod(message_descriptor, message_meta)
-	local singular_fields = {}
-    for _, field in ipairs(message_descriptor.fields) do
-        if field.label ~= FieldDescriptor.LABEL_REPEATED then
-            singular_fields[field.name] = field
-        end
-    end
-
     message_meta._member.ClearField = function(self, field_name)
-		field = singular_fields[field_name]
-		if field == nil then
-				error('Protocol message has no singular "'.. field_name.. '" field.')
-		end
+        if message_descriptor.fields_by_name[field_name] == nil then
+            error('Protocol message has no "' .. field_name .. '" field.')
+        end
 
-		if self._fields[field] then
-				self._fields[field] = nil
-		end
-		message_meta._member._Modified(self)
-	end
+        if self._fields[field] then
+            self._fields[field] = nil
+        end
+        message_meta._member._Modified(self)
+    end
 end
 
 local function _AddClearExtensionMethod(message_meta)
@@ -638,10 +599,7 @@ end
 
 local function _AddByteSizeMethod(message_descriptor, message_meta)
     message_meta._member.ByteSize = function(self)
-        --kaiser
-        --bug:这里在Repeat字段的结构体如果第一个字段不是int变量会产生_cached_byte_size_dirty为false而导致byte size为0
-        --如果bytesize为0让它强制计算byte size
-        if not self._cached_byte_size_dirty and self._cached_byte_size > 0 then
+        if not self._cached_byte_size_dirty then
             return self._cached_byte_size
         end
         local size = 0
@@ -702,8 +660,6 @@ local function _AddSerializePartialToStringMethod(message_descriptor, message_me
     message_meta._member.SerializePartialToIOString = _serialize_partial_to_iostring
     message_meta._member.SerializePartialToString = _serialize_partial_to_string
 end
-
-
 
 local function _AddMergeFromStringMethod(message_descriptor, message_meta)
     local ReadTag = decoder.ReadTag
@@ -793,20 +749,20 @@ local function _AddIsInitializedMethod(message_descriptor, message_meta)
 
         for _,field in ipairs(required_fields) do
             if not message_meta._member.HasField(self, field.name) then
-                errors[#errors + 1] = field.name
+                errors.append(field.name) 
             end
         end
 
         for field, value in message_meta._member.ListFields(self) do
             if field.cpp_type == FieldDescriptor.CPPTYPE_MESSAGE then
                 if field.is_extension then
-                    name = string.format("(%s)", field.full_name)
+                    name = io:format("(%s)", field.full_name)
                 else
                     name = field.name
                 end
                 if field.label == FieldDescriptor.LABEL_REPEATED then
                     for i, element in ipairs(value) do
-                        prefix = string.format("%s[%d].", name, i)
+                        prefix = io:format("%s[%d].", name, i)
                         sub_errors = element:FindInitializationErrors()
                         for _, e in ipairs(sub_errors) do
                             errors[#errors + 1] = prefix .. e
@@ -917,7 +873,7 @@ function _AddClassAttributesForNestedExtensions(descriptor, message_meta)
     end
 end
 
-function Message(descriptor)
+local function Message(descriptor)
     local message_meta = {}
     message_meta._decoders_by_tag = {}
     rawset(descriptor, "_extensions_by_name", {})
@@ -962,6 +918,5 @@ function Message(descriptor)
     return ns 
 end
 
--- _M.Message = Message
+_M.Message = Message
 
-return protobuf

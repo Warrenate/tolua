@@ -59,7 +59,12 @@ public class LuaClient : MonoBehaviour
     {
         //保持库名字与5.1.5库中一致
         luaState.BeginPreLoad();                        
-        luaState.AddPreLoadLib("pb2", new LuaCSFunction(LuaDLL.luaopen_pb));
+        luaState.AddPreLoadLib("pb", new LuaCSFunction(LuaDLL.luaopen_pb));
+        luaState.AddPreLoadLib("pb.io", new LuaCSFunction(LuaDLL.luaopen_pb_io));
+        luaState.AddPreLoadLib("pb.conv", new LuaCSFunction(LuaDLL.luaopen_pb_conv));
+        luaState.AddPreLoadLib("pb.buffer", new LuaCSFunction(LuaDLL.luaopen_pb_buffer));
+        luaState.AddPreLoadLib("pb.slice", new LuaCSFunction(LuaDLL.luaopen_pb_slice));
+
         luaState.AddPreLoadLib("struct", new LuaCSFunction(LuaDLL.luaopen_struct));
         luaState.AddPreLoadLib("lpeg", new LuaCSFunction(LuaDLL.luaopen_lpeg));
         luaState.AddPreLoadLib("cjson", new LuaCSFunction(LuaDLL.luaopen_cjson));

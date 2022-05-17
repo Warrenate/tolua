@@ -20,41 +20,35 @@ local table = table
 local ipairs = ipairs
 local assert =assert
 
-local pb = require "pb2"
+local pb = require "pb"
 local wire_format = require "protobuf.wire_format"
--- module "protobuf.encoder"
-local encoder = {}
-if setfenv then
-  setfenv(1, encoder);
-else
-  _ENV = encoder
+module "protobuf.encoder"
+
+function _VarintSize(value)
+	if value <= 0x7f then return 1 end
+	if value <= 0x3fff then return 2 end
+	if value <= 0x1fffff then return 3 end
+	if value <= 0xfffffff then return 4 end
+	if value <= 0x7ffffffff then return 5 end
+	if value <= 0x3ffffffffff then return 6 end
+	if value <= 0x1ffffffffffff then return 7 end
+	if value <= 0xffffffffffffff then return 8 end
+	if value <= 0x7fffffffffffffff then return 9 end
+	return 10 
 end
 
-function _VarintSize(value)    
-    if value <= 0x7f then return 1 end
-    if value <= 0x3fff then return 2 end
-    if value <= 0x1fffff then return 3 end
-    if value <= 0xfffffff then return 4 end
-    if value <= 0x7ffffffff then return 5 end
-    if value <= 0x3ffffffffff then return 6 end
-    if value <= 0x1ffffffffffff then return 7 end
-    if value <= 0xffffffffffffff then return 8 end
-    if value <= 0x7fffffffffffffff then return 9 end
-    return 10
-end
-
-function _SignedVarintSize(value)    
-    if value < 0 then return 10 end
-    if value <= 0x7f then return 1 end
-    if value <= 0x3fff then return 2 end
-    if value <= 0x1fffff then return 3 end
-    if value <= 0xfffffff then return 4 end
-    if value <= 0x7ffffffff then return 5 end
-    if value <= 0x3ffffffffff then return 6 end
-    if value <= 0x1ffffffffffff then return 7 end
-    if value <= 0xffffffffffffff then return 8 end
-    if value <= 0x7fffffffffffffff then return 9 end
-    return 10
+function _SignedVarintSize(value)
+	if value < 0 then return 10 end
+	if value <= 0x7f then return 1 end
+	if value <= 0x3fff then return 2 end
+	if value <= 0x1fffff then return 3 end
+	if value <= 0xfffffff then return 4 end
+	if value <= 0x7ffffffff then return 5 end
+	if value <= 0x3ffffffffff then return 6 end
+	if value <= 0x1ffffffffffff then return 7 end
+	if value <= 0xffffffffffffff then return 8 end
+	if value <= 0x7fffffffffffffff then return 9 end
+	return 10 
 end
 
 function _TagSize(field_number)
@@ -141,13 +135,13 @@ function _FixedSizer(value_size)
 end
 
 Int32Sizer = _SimpleSizer(_SignedVarintSize)
-Int64Sizer = _SimpleSizer(pb.signed_varint_size)
+Int64Sizer = Int32Sizer
 EnumSizer = Int32Sizer
 
 UInt32Sizer = _SimpleSizer(_VarintSize)
-UInt64Sizer = _SimpleSizer(pb.varint_size) 
+UInt64Sizer = UInt32Sizer 
 
-SInt32Sizer = _ModifiedSizer(_SignedVarintSize, wire_format.ZigZagEncode32)
+SInt32Sizer = _ModifiedSizer(_SignedVarintSize, wire_format.ZigZagEncode)
 SInt64Sizer = SInt32Sizer
 
 Fixed32Sizer = _FixedSizer(4) 
@@ -230,8 +224,6 @@ end
 
 local _EncodeVarint = pb.varint_encoder
 local _EncodeSignedVarint = pb.signed_varint_encoder
-local _EncodeVarint64 = pb.varint_encoder64
-local _EncodeSignedVarint64 = pb.signed_varint_encoder64
 
 
 function _VarintBytes(value)
@@ -348,18 +340,18 @@ function _StructPackEncoder(wire_type, value_size, format)
 end
 
 Int32Encoder = _SimpleEncoder(wire_format.WIRETYPE_VARINT, _EncodeSignedVarint, _SignedVarintSize)
-Int64Encoder = _SimpleEncoder(wire_format.WIRETYPE_VARINT, _EncodeSignedVarint64, _SignedVarintSize)
+Int64Encoder = Int32Encoder
 EnumEncoder = Int32Encoder
 
 UInt32Encoder = _SimpleEncoder(wire_format.WIRETYPE_VARINT, _EncodeVarint, _VarintSize)
-UInt64Encoder = _SimpleEncoder(wire_format.WIRETYPE_VARINT, _EncodeVarint64, _VarintSize)
+UInt64Encoder = UInt32Encoder
 
 SInt32Encoder = _ModifiedEncoder(
     wire_format.WIRETYPE_VARINT, _EncodeVarint, _VarintSize,
     wire_format.ZigZagEncode32)
 
 SInt64Encoder = _ModifiedEncoder(
-    wire_format.WIRETYPE_VARINT, _EncodeVarint64, _VarintSize,
+    wire_format.WIRETYPE_VARINT, _EncodeVarint, _VarintSize,
     wire_format.ZigZagEncode64)
 
 Fixed32Encoder  = _StructPackEncoder(wire_format.WIRETYPE_FIXED32, 4, string.byte('I'))
@@ -477,4 +469,3 @@ function MessageEncoder(field_number, is_repeated, is_packed)
     end
 end
 
-return encoder

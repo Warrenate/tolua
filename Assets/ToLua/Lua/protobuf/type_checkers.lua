@@ -20,14 +20,7 @@ local type = type
 local error = error
 local string = string
 
--- module "protobuf.type_checkers"
-local type_checkers = {}
-if setfenv then
-  setfenv(1, type_checkers);
-else
-  _ENV = type_checkers
-end
-
+module "protobuf.type_checkers"
 function TypeChecker(acceptable_types)
     local acceptable_types = acceptable_types
 
@@ -69,6 +62,38 @@ function Uint32ValueChecker(IntValueChecker)
     end
 end
 
+
+
+function Int64ValueChecker()
+    local _MIN = -9223372036854775808
+    local _MAX = 9223372036854775808
+    return function(proposed_value)
+    if type(proposed_value) ~= 'number' then
+    error(string.format('%s has type %s, but expected one of: number',
+    proposed_value, type(proposed_value)))
+    end
+    if _MIN > proposed_value or proposed_value > _MAX then
+    error('Value out of range: ' .. proposed_value)
+    end
+    end
+end
+
+function Uint64ValueChecker(IntValueChecker)
+    local _MIN = 0
+    local _MAX = 18446744073709551615
+
+    return function(proposed_value)
+        if type(proposed_value) ~= 'number' then
+            error(string.format('%s has type %s, but expected one of: number',
+                proposed_value, type(proposed_value)))
+        end
+        if _MIN > proposed_value or proposed_value > _MAX then
+            error('Value out of range: ' .. proposed_value)
+        end
+    end
+end
+
+
 function UnicodeValueChecker()
     return function (proposed_value)
         if type(proposed_value) ~= 'string' then
@@ -76,5 +101,3 @@ function UnicodeValueChecker()
         end
     end
 end
-
-return type_checkers

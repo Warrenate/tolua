@@ -17,13 +17,7 @@
 --
 local setmetatable = setmetatable
 
--- module "protobuf.listener"
-local listener = {}
-if setfenv then
-  setfenv(1, listener);
-else
-  _ENV = listener
-end
+module "protobuf.listener"
 
 local _null_listener = {
     Modified = function()
@@ -54,4 +48,3 @@ function Listener(parent_message)
     return setmetatable(o, _listener_meta)
 end
 
-return listener

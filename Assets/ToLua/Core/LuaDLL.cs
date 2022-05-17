@@ -1481,8 +1481,24 @@ namespace LuaInterface
         ** third party library
         */
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
-	    [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        [MonoPInvokeCallback(typeof(LuaCSFunction))]
         public static extern int luaopen_pb(IntPtr L);
+
+        [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
+        [MonoPInvokeCallback(typeof(LuaCSFunction))]
+        public static extern int luaopen_pb_io(IntPtr L);
+
+        [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
+        [MonoPInvokeCallback(typeof(LuaCSFunction))]
+        public static extern int luaopen_pb_conv(IntPtr L);
+
+        [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
+        [MonoPInvokeCallback(typeof(LuaCSFunction))]
+        public static extern int luaopen_pb_buffer(IntPtr L);
+
+        [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
+        [MonoPInvokeCallback(typeof(LuaCSFunction))]
+        public static extern int luaopen_pb_slice(IntPtr L);
 
 #if !LUAC_5_3
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
