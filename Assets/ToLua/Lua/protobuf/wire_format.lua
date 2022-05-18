@@ -15,8 +15,14 @@
 --------------------------------------------------------------------------------
 --
 
-local pb = require "pb"
-module "protobuf.wire_format"
+local pb = require "pb2"
+-- module "protobuf.wire_format"
+local wire_format = {}
+if setfenv then
+  setfenv(1, wire_format);
+else
+  _ENV = wire_format
+end
 
 WIRETYPE_VARINT = 0
 WIRETYPE_FIXED64 = 1
@@ -29,16 +35,11 @@ _WIRETYPE_MAX = 5
 
 -- yeah, we don't need uint64
 local function _VarUInt64ByteSizeNoTag(uint64)
-	if uint64 <= 0x7f then return 1 end
-	if uint64 <= 0x3fff then return 2 end
-	if uint64 <= 0x1fffff then return 3 end
-	if uint64 <= 0xfffffff then return 4 end
-	if uint64 <= 0x7ffffffff then return 5 end
-	if uint64 <= 0x3ffffffffff then return 6 end
-	if uint64 <= 0x1ffffffffffff then return 7 end
-	if uint64 <= 0xffffffffffffff then return 8 end
-	if uint64 <= 0x7fffffffffffffff then return 9 end
-	return 10 
+    if uint64 <= 0x7f then return 1 end
+    if uint64 <= 0x3fff then return 2 end
+    if uint64 <= 0x1fffff then return 3 end
+    if uint64 <= 0xfffffff then return 4 end
+    return 5
 end
 
 function PackTag(field_number, wire_type)
@@ -140,3 +141,4 @@ function TagByteSize(field_number)
     return _VarUInt64ByteSizeNoTag(PackTag(field_number, 0))
 end
 
+return wire_format
